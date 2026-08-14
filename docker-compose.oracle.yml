@@ -1,0 +1,80 @@
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-jsemsas}
+      POSTGRES_USER: ${POSTGRES_USER:-jsemsas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jsemsas} -d ${POSTGRES_DB:-jsemsas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile -
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jsemsas}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-jsemsas}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: celery -A config worker --loglevel=INFO --concurrency=2
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jsemsas}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-jsemsas}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build: .
+    restart: unless-stopped
+    command: celery -A config beat --loglevel=INFO
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-jsemsas}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-jsemsas}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_data:
+  static_data:
