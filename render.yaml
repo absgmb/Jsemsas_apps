@@ -116,7 +116,7 @@ services:
     plan: starter
     ipAllowList:
       - source: 0.0.0.0/0
-        description: Render private service network
+        description: Render service network
     maxmemoryPolicy: noeviction
     persistenceMode: journal-snapshot
 
@@ -128,4 +128,4 @@ databases:
     databaseName: jsemsas
     user: jsemsas
     diskSizeGB: 10
-    diskAutoscaling: true
+    storageAutoscalingEnabled: true
