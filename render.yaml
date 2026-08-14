@@ -10,7 +10,7 @@ services:
     healthCheckPath: /healthz/
     maxShutdownDelaySeconds: 60
     autoDeploy: true
-    preDeployCommand: python manage.py migrate --noinput
+    preDeployCommand: python manage.py shell -c "from django.db import connection; connection.cursor().execute('CREATE EXTENSION IF NOT EXISTS postgis')" && python manage.py migrate --noinput
     envVars:
       - key: DJANGO_SECRET_KEY
         sync: false
