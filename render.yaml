@@ -1,0 +1,131 @@
+services:
+  - type: web
+    name: jsemsas-api
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: gunicorn config.wsgi:application --bind 0.0.0.0:10000 --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile -
+    healthCheckPath: /healthz/
+    maxShutdownDelaySeconds: 60
+    autoDeploy: true
+    preDeployCommand: python manage.py migrate --noinput
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: QR_SIGNING_KEY
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GOOGLE_SHEETS_ID
+        sync: false
+      - key: GOOGLE_SHEETS_RANGE
+        value: Tariffs!A:E
+      - key: DEBUG
+        value: "False"
+      - key: SECURE_SSL_REDIRECT
+        value: "True"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: ""
+      - key: CSRF_TRUSTED_ORIGINS
+        value: ""
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jsemsas-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: jsemsas-redis
+          property: connectionString
+
+  - type: worker
+    name: jsemsas-celery-worker
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: celery -A config worker --loglevel=INFO --concurrency=2
+    maxShutdownDelaySeconds: 60
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: QR_SIGNING_KEY
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GOOGLE_SHEETS_ID
+        sync: false
+      - key: GOOGLE_SHEETS_RANGE
+        value: Tariffs!A:E
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jsemsas-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: jsemsas-redis
+          property: connectionString
+
+  - type: worker
+    name: jsemsas-celery-beat
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: celery -A config beat --loglevel=INFO
+    maxShutdownDelaySeconds: 60
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        sync: false
+      - key: QR_SIGNING_KEY
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GOOGLE_SHEETS_ID
+        sync: false
+      - key: GOOGLE_SHEETS_RANGE
+        value: Tariffs!A:E
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jsemsas-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: jsemsas-redis
+          property: connectionString
+
+  - type: keyvalue
+    name: jsemsas-redis
+    region: frankfurt
+    plan: starter
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: Render private service network
+    maxmemoryPolicy: noeviction
+    persistenceMode: journal-snapshot
+
+databases:
+  - name: jsemsas-postgres
+    region: frankfurt
+    plan: basic-256mb
+    postgresMajorVersion: "17"
+    databaseName: jsemsas
+    user: jsemsas
+    diskSizeGB: 10
+    diskAutoscaling: true
