@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>J-SEMSAS Operations Dashboard</title>
+<style>
+:root{color-scheme:dark}body{margin:0;background:#0b1220;color:#e5e7eb;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1400px;margin:auto;padding:28px}.top{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:28px}.brand h1{margin:0;font-size:28px}.brand p{margin:6px 0 0;color:#94a3b8}.btn{background:#2563eb;color:white;text-decoration:none;padding:10px 15px;border-radius:9px;font-weight:600}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}.card{background:#111827;border:1px solid #1f2937;border-radius:14px;padding:18px}.label{font-size:12px;text-transform:uppercase;color:#94a3b8;letter-spacing:.06em}.value{font-size:30px;font-weight:800;margin-top:8px}.money{font-size:24px}.section{margin-top:28px}.section h2{font-size:18px}.table{width:100%;border-collapse:collapse;background:#111827;border:1px solid #1f2937;border-radius:14px;overflow:hidden}.table th,.table td{text-align:left;padding:12px;border-bottom:1px solid #1f2937;font-size:13px}.table th{color:#94a3b8}.pill{padding:5px 9px;border-radius:999px;background:#1e293b;font-size:11px}.actions{display:flex;gap:10px;flex-wrap:wrap}.muted{color:#94a3b8}
+</style></head>
+<body><div class="wrap">
+<div class="top"><div class="brand"><h1>J-SEMSAS Operations Dashboard</h1><p>Emergency dispatch, ambulance and ETC claims control centre · {{ week_start }} → {{ today }}</p></div><div class="actions"><a class="btn" href="/admin/">Django Admin</a><a class="btn" href="/api/">API</a></div></div>
+<div class="grid">
+{% for label,value in stats.items %}{% if label != 'week_dispatch_value' and label != 'week_etc_value' %}<div class="card"><div class="label">{{ label|cut:'_'|title }}</div><div class="value">{{ value }}</div></div>{% endif %}{% endfor %}
+<div class="card"><div class="label">7-day Dispatch Value</div><div class="value money">₦{{ stats.week_dispatch_value|floatformat:2 }}</div></div>
+<div class="card"><div class="label">7-day ETC Value</div><div class="value money">₦{{ stats.week_etc_value|floatformat:2 }}</div></div>
+</div>
+<div class="section"><h2>Recent Dispatches</h2><table class="table"><thead><tr><th>Code</th><th>Patient</th><th>Ambulance</th><th>Driver</th><th>Status</th><th>Amount</th></tr></thead><tbody>{% for d in recent_dispatches %}<tr><td>{{ d.unique_code }}</td><td>{{ d.patient_name }}</td><td>{{ d.ambulance.ambulance_id }}</td><td>{{ d.assigned_driver|default:'Unassigned' }}</td><td><span class="pill">{{ d.status }}</span></td><td>₦{{ d.total_claim_amount|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="6" class="muted">No dispatches yet.</td></tr>{% endfor %}</tbody></table></div>
+<div class="section"><h2>Recent ETC Claims</h2><table class="table"><thead><tr><th>Code</th><th>Patient</th><th>Facility</th><th>Status</th><th>Amount</th></tr></thead><tbody>{% for c in recent_claims %}<tr><td>{{ c.unique_code }}</td><td>{{ c.patient_name }}</td><td>{{ c.facility.facility_code }}</td><td><span class="pill">{{ c.status }}</span></td><td>₦{{ c.total_amount|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="5" class="muted">No ETC claims yet.</td></tr>{% endfor %}</tbody></table></div>
+</div></body></html>
