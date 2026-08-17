@@ -3,9 +3,15 @@ from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from dispatches.views import VerifyClaimView
 from config.health import health, readiness
+from config.dashboard import dashboard
+
+admin.site.site_header = "J-SEMSAS Administration"
+admin.site.site_title = "J-SEMSAS Admin"
+admin.site.index_title = "Emergency Medical Services Control Centre"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("dashboard/", dashboard, name="dashboard"),
     path("healthz/", health),
     path("readyz/", readiness),
     path("api/auth/token/", TokenObtainPairView.as_view()),
