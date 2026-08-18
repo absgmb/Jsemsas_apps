@@ -1,0 +1,17 @@
+name: novastream_player
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+  flutter: ">=3.38.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.6.1
+  google_mobile_ads: ^6.0.0
+  ffi: ^2.1.3
+
+flutter:
+  uses-material-design: true
