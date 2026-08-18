@@ -20,11 +20,11 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-# Generate initial migrations in the image because the repository currently
-# contains migration package stubs. Future migrations should be committed.
-RUN python manage.py makemigrations accounts incidents dispatches etc_claims audit \
-    && python manage.py collectstatic --noinput
+# Build static assets only. Database migrations must run at container startup,
+# not during image build, because the production database is a runtime service.
+RUN python manage.py collectstatic --noinput
 
-EXPOSE 10000
+# PandaStack injects PORT at runtime. 8000 is the local/default port.
+EXPOSE 8000
 
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:10000", "--workers", "2", "--threads", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 1 --threads 2 --timeout 120 --access-logfile - --error-logfile -"]
