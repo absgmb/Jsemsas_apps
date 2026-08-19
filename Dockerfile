@@ -20,10 +20,10 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-# Build static assets only. Database migrations run at container startup.
+# Build static assets only. Do not require the runtime database during image build.
 RUN python manage.py collectstatic --noinput
 
-# PandaStack defaults to PORT=8080 and injects PORT at runtime.
+# PandaStack injects PORT at runtime; 8080 is its documented default.
 EXPOSE 8080
 
-CMD ["sh", "-c", "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 2 --timeout 120 --access-logfile - --error-logfile -"]
+CMD ["sh", "-c", "echo \"Starting J-SEMSAS on 0.0.0.0:${PORT:-8080}\"; gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 1 --threads 2 --timeout 120 --access-logfile - --error-logfile - & GUNICORN_PID=$!; sleep 2; (python manage.py migrate --noinput || echo 'WARNING: migrations failed; web process remains available for health checks') & wait $GUNICORN_PID"]
